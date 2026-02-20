@@ -121,6 +121,19 @@ export async function reportSite(id) {
 }
 
 // ─────────────────────────────────────────────────────────
+// unreportSite — 報告を取り消す（カウントを1減らす）
+// ─────────────────────────────────────────────────────────
+export async function unreportSite(id) {
+  try {
+    const reports = JSON.parse(localStorage.getItem(REPORTS_KEY) ?? '{}')
+    if ((reports[id] ?? 0) > 0) {
+      reports[id] -= 1
+      localStorage.setItem(REPORTS_KEY, JSON.stringify(reports))
+    }
+  } catch {}
+}
+
+// ─────────────────────────────────────────────────────────
 // getReportCount — サイトの報告数を取得
 // ─────────────────────────────────────────────────────────
 export function getReportCount(id) {

@@ -6,7 +6,7 @@ import {
 import { User } from 'lucide-react'
 
 import { sites, CATEGORIES } from './data/sites'
-import { getSites, saveSite, getHiddenSiteIds, hideSite, reportSite } from './services/db'
+import { getSites, saveSite, getHiddenSiteIds, hideSite, reportSite, unreportSite } from './services/db'
 import { recordView, toggleLike, toggleFavorite, getUserLikedIds, getUserFavoriteIds, saveSiteToSupabase } from './services/supabaseDb'
 import { getCategoryPrefs, recordCategoryWatch, buildScoredFeed, startWatch, endWatch } from './hooks/useFeed'
 import { useAuth } from './context/AuthContext'
@@ -237,6 +237,21 @@ const [showHelp,        setShowHelp]        = useState(false)
     return () => window.removeEventListener('keydown', onKey)
   }, [goNext, goPrev, showModal, showAuthModal, loginPromptAction])
 
+  // マウスホイール（700ms スロットル）
+  const lastWheelRef = useRef(0)
+  useEffect(() => {
+    const onWheel = (e) => {
+      if (showModal || showAuthModal || loginPromptAction || showMyPage || showHelp) return
+      const now = Date.now()
+      if (now - lastWheelRef.current < 700) return
+      lastWheelRef.current = now
+      if (e.deltaY > 0) goNext()
+      else if (e.deltaY < 0) goPrev()
+    }
+    window.addEventListener('wheel', onWheel, { passive: true })
+    return () => window.removeEventListener('wheel', onWheel)
+  }, [goNext, goPrev, showModal, showAuthModal, loginPromptAction, showMyPage, showHelp])
+
   // スワイプ終了
   const handleDragEnd = useCallback((_, info) => {
     const { offset, velocity } = info
@@ -297,6 +312,13 @@ const [showHelp,        setShowHelp]        = useState(false)
   const handleAutoSkip = useCallback(() => {
     goNext()
   }, [goNext])
+
+  // ── 11c. 報告取り消し ─────────────────────────────────────────
+  const handleUnreport = useCallback(async () => {
+    if (!currentItem || currentItem.type !== 'site') return
+    await unreportSite(currentItem.id)
+    showToast('報告を取り消しました')
+  }, [currentItem, showToast])
 
   // ── 12. HelpModal ────────────────────────────────────────────
   const closeHelp = useCallback(() => {
@@ -424,10 +446,10 @@ const [showHelp,        setShowHelp]        = useState(false)
 
       {/* ══ Layer 3: UI 要素 ════════════════════════════════════ */}
 
-      {/* ユーザーボタン（左下 / TikTok スタイル） */}
+      {/* ユーザーボタン（右下 / TikTok スタイル） */}
       <button
         onClick={() => user ? setShowMyPage(true) : setShowAuthModal(true)}
-        className="absolute left-4 bottom-8 z-50 w-10 h-10
+        className="absolute right-4 bottom-8 z-50 w-10 h-10
           flex items-center justify-center rounded-full
           bg-gray-900/85 backdrop-blur-md
           border border-white/20 shadow-lg shadow-black/50
@@ -472,6 +494,7 @@ const [showHelp,        setShowHelp]        = useState(false)
         onUrlSubmit={handleOpenSubmit}
         onShare={handleShare}
         onReport={handleReport}
+        onUnreport={handleUnreport}
         siteId={currentSiteId}
         canReport={currentItem?.type === 'site'}
       />

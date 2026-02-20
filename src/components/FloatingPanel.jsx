@@ -1,25 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Heart, PlusCircle, MousePointer2, Share2, Flag, Bookmark } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
-
-/**
- * グラスモーフィズム フローティングパネル
- *
- * Props:
- *   isInteractive        : boolean
- *   onToggleInteractive  : fn
- *   liked                : boolean  — 外部から渡す（Supabase 連動）
- *   likeCount            : number
- *   onLike               : fn       — 認証チェック後に呼ばれる
- *   favorited            : boolean
- *   onFavorite           : fn
- *   onUrlSubmit          : fn
- *   onTip                : fn
- *   onShare              : fn
- *   onReport             : fn
- *   siteId               : string   — 変わるたびに報告状態をリセット
- *   canReport            : boolean  — 広告カードでは非表示
- */
+import { useLang } from '../context/LangContext'
 
 function Divider() {
   return <div className="w-8 h-px bg-white/[0.15] mx-auto flex-shrink-0" />
@@ -75,20 +57,19 @@ function ActionButton({
 export default function FloatingPanel({
   isInteractive,
   onToggleInteractive,
-  // いいね（外部管理）
   liked      = false,
   likeCount  = 0,
   onLike,
-  // お気に入り（外部管理）
   favorited  = false,
   onFavorite,
-  // その他アクション
   onUrlSubmit,
   onShare,
   onReport,
+  onUnreport,
   siteId,
   canReport,
 }) {
+  const { t } = useLang()
   const [reported, setReported] = useState(false)
 
   useEffect(() => {
@@ -96,9 +77,13 @@ export default function FloatingPanel({
   }, [siteId])
 
   const handleReport = () => {
-    if (reported) return
-    setReported(true)
-    onReport?.()
+    if (reported) {
+      setReported(false)
+      onUnreport?.()
+    } else {
+      setReported(true)
+      onReport?.()
+    }
   }
 
   return (
@@ -111,10 +96,10 @@ export default function FloatingPanel({
         shadow-2xl shadow-black/80
       ">
 
-        {/* ❤️ いいね（認証必要） */}
+        {/* ❤️ いいね */}
         <ActionButton
           icon={Heart}
-          label={likeCount > 0 ? String(likeCount) : 'いいね'}
+          label={likeCount > 0 ? String(likeCount) : t('like')}
           iconClass={liked
             ? 'text-rose-400 fill-rose-400 icon-glow-rose'
             : 'text-white/75'}
@@ -126,10 +111,10 @@ export default function FloatingPanel({
 
         <Divider />
 
-        {/* 🔖 お気に入り（認証必要） */}
+        {/* 🔖 お気に入り */}
         <ActionButton
           icon={Bookmark}
-          label={favorited ? '保存済' : '保存'}
+          label={favorited ? t('saved') : t('save')}
           iconClass={favorited ? 'text-sky-400 fill-sky-400' : 'text-white/70'}
           active={favorited}
           onClick={onFavorite}
@@ -140,7 +125,7 @@ export default function FloatingPanel({
         {/* 🔗 シェア */}
         <ActionButton
           icon={Share2}
-          label="シェア"
+          label={t('share')}
           iconClass="text-white/70"
           onClick={onShare}
         />
@@ -150,7 +135,7 @@ export default function FloatingPanel({
         {/* ＋ URL投稿 */}
         <ActionButton
           icon={PlusCircle}
-          label="投稿"
+          label={t('post')}
           iconClass="text-sky-400"
           glowClass="icon-glow-sky"
           onClick={onUrlSubmit}
@@ -161,20 +146,20 @@ export default function FloatingPanel({
         {/* ⌖ インタラクティブモード切替 */}
         <ActionButton
           icon={MousePointer2}
-          label={isInteractive ? '操作中' : 'タップ'}
+          label={isInteractive ? t('operating') : t('tap')}
           iconClass={isInteractive ? 'text-emerald-400' : 'text-white/50'}
           glowClass="icon-glow-green"
           active={isInteractive}
           onClick={onToggleInteractive}
         />
 
-        {/* 🚩 報告 */}
+        {/* 🚩 報告（トグル可能） */}
         {canReport && (
           <>
             <Divider />
             <ActionButton
               icon={Flag}
-              label={reported ? '報告済' : '報告'}
+              label={reported ? t('reported') : t('report')}
               iconClass={reported ? 'text-rose-400 fill-rose-400' : 'text-white/30'}
               active={reported}
               onClick={handleReport}

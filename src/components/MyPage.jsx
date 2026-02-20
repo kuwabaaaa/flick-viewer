@@ -1,10 +1,11 @@
 import { useState, useEffect, useCallback } from 'react'
 import {
-  X, User, Wallet, LayoutGrid, Heart, Bookmark,
-  Pencil, Trash2, Save, Eye, SkipForward, ExternalLink, LogOut,
+  X, User, Wallet, LayoutGrid, Bookmark,
+  Pencil, Trash2, Save, Eye, SkipForward, ExternalLink, LogOut, Settings,
 } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useAuth } from '../context/AuthContext'
+import { useLang } from '../context/LangContext'
 import {
   getAuthorSites, getFavoriteSites, updateSite, deleteSite,
 } from '../services/supabaseDb'
@@ -167,14 +168,16 @@ function SiteListCard({ site }) {
 
 // ── タブ定義 ──────────────────────────────────────────────────
 const TABS = [
-  { id: 'profile',   label: 'プロフィール', icon: User },
-  { id: 'posts',     label: '自分の投稿',   icon: LayoutGrid },
-  { id: 'favorites', label: 'お気に入り',   icon: Bookmark },
+  { id: 'profile',   labelKey: 'profile',   icon: User },
+  { id: 'posts',     labelKey: 'myPosts',   icon: LayoutGrid },
+  { id: 'favorites', labelKey: 'favorites', icon: Bookmark },
+  { id: 'settings',  labelKey: 'settings',  icon: Settings },
 ]
 
 // ── メインコンポーネント ──────────────────────────────────────
 export default function MyPage({ onClose }) {
   const { user, profile, updateProfile, signOut } = useAuth()
+  const { lang, setLang, t } = useLang()
   const [tab,       setTab]       = useState('profile')
   const [btc,       setBtc]       = useState(profile?.btc_wallet ?? '')
   const [eth,       setEth]       = useState(profile?.eth_wallet ?? '')
@@ -251,13 +254,13 @@ export default function MyPage({ onClose }) {
 
         {/* ── タブバー ── */}
         <div className="flex gap-1 px-4 py-2.5 flex-shrink-0 border-b border-white/5 overflow-x-auto no-scrollbar">
-          {TABS.map((t) => (
-            <button key={t.id} onClick={() => setTab(t.id)}
+          {TABS.map((tb) => (
+            <button key={tb.id} onClick={() => setTab(tb.id)}
               className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold
                 whitespace-nowrap transition-all
-                ${tab === t.id ? 'bg-white/10 text-white' : 'text-white/35 hover:text-white/60'}`}>
-              <t.icon size={13} />
-              {t.label}
+                ${tab === tb.id ? 'bg-white/10 text-white' : 'text-white/35 hover:text-white/60'}`}>
+              <tb.icon size={13} />
+              {t(tb.labelKey)}
             </button>
           ))}
         </div>
@@ -368,6 +371,48 @@ export default function MyPage({ onClose }) {
                     ))}
                   </div>
                 )}
+              </motion.div>
+            )}
+
+            {/* ─── 設定タブ ─── */}
+            {tab === 'settings' && (
+              <motion.div key="settings"
+                initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: 10 }} transition={{ duration: 0.2 }}
+                className="p-5 space-y-6"
+              >
+                {/* 言語設定 */}
+                <div>
+                  <SectionHeader icon={Settings} label={t('language')} />
+                  <div className="flex gap-3">
+                    {[
+                      { code: 'ja', label: '日本語', flag: '🇯🇵' },
+                      { code: 'en', label: 'English', flag: '🇺🇸' },
+                    ].map(({ code, label, flag }) => (
+                      <motion.button
+                        key={code}
+                        whileTap={{ scale: 0.96 }}
+                        onClick={() => setLang(code)}
+                        className={`flex-1 flex flex-col items-center gap-2 py-4 rounded-2xl
+                          border transition-all text-sm font-semibold
+                          ${lang === code
+                            ? 'bg-white/10 border-white/30 text-white'
+                            : 'glass border-white/10 text-white/45 hover:text-white/70'}`}
+                      >
+                        <span className="text-2xl">{flag}</span>
+                        <span>{label}</span>
+                        {lang === code && (
+                          <span className="text-[10px] text-emerald-400 font-medium">✓ 選択中</span>
+                        )}
+                      </motion.button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* バージョン情報 */}
+                <div className="pt-2 border-t border-white/5">
+                  <p className="text-white/20 text-xs text-center">FlickView v0.1.0</p>
+                </div>
               </motion.div>
             )}
 
