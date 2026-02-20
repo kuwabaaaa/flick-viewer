@@ -53,14 +53,15 @@ export async function deleteSite(siteId) {
 export async function toggleLike(userId, siteId) {
   if (!isSupabaseConfigured) return false
   const { data: existing } = await supabase
-    .from('likes').select('user_id').eq('user_id', userId).eq('site_id', siteId).single()
+    .from('likes').select('user_id').eq('user_id', userId).eq('site_id', siteId).maybeSingle()
 
   if (existing) {
     await supabase.from('likes').delete().eq('user_id', userId).eq('site_id', siteId)
     await supabase.rpc('decrement_likes', { p_site_id: siteId })
     return false
   } else {
-    await supabase.from('likes').insert({ user_id: userId, site_id: siteId })
+    const { error } = await supabase.from('likes').insert({ user_id: userId, site_id: siteId })
+    if (error) return true   // FK 未登録サイト（seed）でも UI 上は liked 扱い
     await supabase.rpc('increment_likes', { p_site_id: siteId })
     return true
   }
@@ -72,15 +73,29 @@ export async function toggleLike(userId, siteId) {
 export async function toggleFavorite(userId, siteId) {
   if (!isSupabaseConfigured) return false
   const { data: existing } = await supabase
-    .from('favorites').select('user_id').eq('user_id', userId).eq('site_id', siteId).single()
+    .from('favorites').select('user_id').eq('user_id', userId).eq('site_id', siteId).maybeSingle()
 
   if (existing) {
     await supabase.from('favorites').delete().eq('user_id', userId).eq('site_id', siteId)
     return false
   } else {
-    await supabase.from('favorites').insert({ user_id: userId, site_id: siteId })
+    const { error } = await supabase.from('favorites').insert({ user_id: userId, site_id: siteId })
+    if (error) return true   // FK 未登録サイト（seed）でも UI 上は favorited 扱い
     return true
   }
+}
+
+// ─────────────────────────────────────────────────────────────────
+// サイト報告（理由付き、閾値で自動削除）
+// ─────────────────────────────────────────────────────────────────
+export async function reportSiteSupabase(siteId, reason) {
+  if (!isSupabaseConfigured) return false
+  const { data, error } = await supabase.rpc('report_site', {
+    p_site_id: siteId,
+    p_reason:  reason,
+  })
+  if (error) return false
+  return data === true  // true = 閾値超過で削除された
 }
 
 // ─────────────────────────────────────────────────────────────────

@@ -7,14 +7,14 @@ import { User } from 'lucide-react'
 
 import { sites, CATEGORIES } from './data/sites'
 import { getSites, saveSite, getHiddenSiteIds, hideSite, reportSite, unreportSite } from './services/db'
-import { recordView, toggleLike, toggleFavorite, getUserLikedIds, getUserFavoriteIds, saveSiteToSupabase } from './services/supabaseDb'
+import { recordView, toggleLike, toggleFavorite, getUserLikedIds, getUserFavoriteIds, saveSiteToSupabase, reportSiteSupabase } from './services/supabaseDb'
 import { getCategoryPrefs, recordCategoryWatch, buildScoredFeed, startWatch, endWatch } from './hooks/useFeed'
 import { useAuth } from './context/AuthContext'
 import { isSupabaseConfigured } from './lib/supabase'
 
 import SiteCard         from './components/SiteCard'
-import AdCard           from './components/AdCard'
 import FloatingPanel    from './components/FloatingPanel'
+import ReportModal      from './components/ReportModal'
 import UrlSubmitModal   from './components/UrlSubmitModal'
 import CategoryBar      from './components/CategoryBar'
 import Toast            from './components/Toast'
@@ -25,15 +25,10 @@ import AlgorithmLoader  from './components/AlgorithmLoader'
 import MyPage           from './components/MyPage'
 
 // ─────────────────────────────────────────────────────────────
-// フィード構築 — 5サイトごとに広告を挿入
+// フィード構築
 // ─────────────────────────────────────────────────────────────
 function buildFeed(siteList) {
-  const feed = []
-  siteList.forEach((site, i) => {
-    feed.push({ type: 'site', ...site })
-    if ((i + 1) % 5 === 0) feed.push({ type: 'ad', id: `ad-${Math.floor(i / 5) + 1}` })
-  })
-  return feed
+  return siteList.map((site) => ({ type: 'site', ...site }))
 }
 
 // スワイプしきい値
@@ -98,8 +93,9 @@ export default function App() {
   // ── 1. localStorage + Supabase サイト取得 ──────────────────
   const [userSites,  setUserSites]  = useState([])
   const [hiddenIds,  setHiddenIds]  = useState([])
-  const [likedIds,   setLikedIds]   = useState([])
+  const [likedIds,    setLikedIds]    = useState([])
   const [favoriteIds, setFavoriteIds] = useState([])
+  const [reportedIds, setReportedIds] = useState(new Set())
 
   useEffect(() => {
     getSites().then(setUserSites)
@@ -118,7 +114,8 @@ export default function App() {
   const [direction,       setDirection]       = useState(1)
   const [isInteractive,   setIsInteractive]   = useState(false)
   const [showModal,       setShowModal]       = useState(false)
-const [showHelp,        setShowHelp]        = useState(false)
+  const [showHelp,        setShowHelp]        = useState(false)
+  const [showReportModal, setShowReportModal] = useState(false)
   const [showAuthModal,   setShowAuthModal]   = useState(false)
   const [showMyPage,      setShowMyPage]      = useState(false)
   const [loginPromptAction, setLoginPromptAction] = useState(null) // null | 'like'|'favorite'|'submit'|'tip'
@@ -290,10 +287,22 @@ const [showHelp,        setShowHelp]        = useState(false)
   }, [requireAuth, currentItem, user, showToast])
 
   // ── 10. 報告 ─────────────────────────────────────────────────
-  const handleReport = useCallback(async () => {
+  const handleOpenReport = useCallback(() => {
     if (!currentItem || currentItem.type !== 'site') return
-    const autoHidden = await reportSite(currentItem.id)
-    if (autoHidden) {
+    setShowReportModal(true)
+  }, [currentItem])
+
+  const handleSubmitReport = useCallback(async (reason) => {
+    setShowReportModal(false)
+    if (!currentItem || currentItem.type !== 'site') return
+    // ローカル DB に記録
+    const autoHiddenLocal = await reportSite(currentItem.id)
+    // Supabase に記録（閾値超過で自動削除）
+    const autoDeletedRemote = isSupabaseConfigured
+      ? await reportSiteSupabase(currentItem.id, reason)
+      : false
+    setReportedIds((prev) => new Set([...prev, currentItem.id]))
+    if (autoHiddenLocal || autoDeletedRemote) {
       setHiddenIds((prev) => [...prev, currentItem.id])
       showToast('サイトを非表示にしました')
       goNext()
@@ -317,6 +326,11 @@ const [showHelp,        setShowHelp]        = useState(false)
   const handleUnreport = useCallback(async () => {
     if (!currentItem || currentItem.type !== 'site') return
     await unreportSite(currentItem.id)
+    setReportedIds((prev) => {
+      const next = new Set(prev)
+      next.delete(currentItem.id)
+      return next
+    })
     showToast('報告を取り消しました')
   }, [currentItem, showToast])
 
@@ -374,9 +388,10 @@ const [showHelp,        setShowHelp]        = useState(false)
   }, [currentItem, showToast])
 
   // ── 現在サイトの状態 ─────────────────────────────────────────
-  const currentSiteId  = currentItem?.type === 'site' ? currentItem.id : null
-  const isLiked        = currentSiteId ? likedIds.includes(currentSiteId) : false
-  const isFavorited    = currentSiteId ? favoriteIds.includes(currentSiteId) : false
+  const currentSiteId    = currentItem?.type === 'site' ? currentItem.id : null
+  const isLiked          = currentSiteId ? likedIds.includes(currentSiteId) : false
+  const isFavorited      = currentSiteId ? favoriteIds.includes(currentSiteId) : false
+  const isReported       = currentSiteId ? reportedIds.has(currentSiteId) : false
   const currentLikeCount = currentItem?.likes_count ?? 0
 
   // ─────────────────────────────────────────────────────────
@@ -401,10 +416,8 @@ const [showHelp,        setShowHelp]        = useState(false)
           transition={cardTransition}
           className="absolute inset-0 z-10"
         >
-          {currentItem?.type === 'site' ? (
+          {currentItem?.type === 'site' && (
             <SiteCard site={currentItem} isInteractive={isInteractive} onBlocked={handleBlocked} onAutoSkip={handleAutoSkip} />
-          ) : (
-            <AdCard adId={currentItem?.id} />
           )}
         </motion.div>
       </AnimatePresence>
@@ -493,34 +506,11 @@ const [showHelp,        setShowHelp]        = useState(false)
         onFavorite={handleFavorite}
         onUrlSubmit={handleOpenSubmit}
         onShare={handleShare}
-        onReport={handleReport}
+        onReport={handleOpenReport}
         onUnreport={handleUnreport}
-        siteId={currentSiteId}
+        reported={isReported}
         canReport={currentItem?.type === 'site'}
       />
-
-      {/* 進捗ドット */}
-      {feed.length > 0 && (
-        <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-30
-          pointer-events-none flex items-center gap-1.5">
-          {feed.slice(0, Math.min(feed.length, 12)).map((item, i) => {
-            const isActive = i === Math.min(currentIndex, 11)
-            return (
-              <motion.div
-                key={i}
-                animate={{
-                  width: isActive ? 20 : 6,
-                  opacity: isActive ? 1 : item.type === 'ad' ? 0.4 : 0.28,
-                  backgroundColor: item.type === 'ad' ? '#f59e0b' : '#ffffff',
-                }}
-                transition={{ type: 'spring', stiffness: 420, damping: 32 }}
-                className="h-1.5 rounded-full"
-              />
-            )
-          })}
-          {feed.length > 12 && <span className="text-white/20 text-xs ml-0.5">…</span>}
-        </div>
-      )}
 
       {/* フィードが空のとき */}
       {feed.length === 0 && (
@@ -575,6 +565,15 @@ const [showHelp,        setShowHelp]        = useState(false)
 
       <AnimatePresence>
         {showMyPage && <MyPage onClose={() => setShowMyPage(false)} />}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {showReportModal && (
+          <ReportModal
+            onSubmit={handleSubmitReport}
+            onClose={() => setShowReportModal(false)}
+          />
+        )}
       </AnimatePresence>
 
       <Toast message={toast.message} visible={toast.visible} type={toast.type} />

@@ -1,4 +1,3 @@
-import { useState, useEffect } from 'react'
 import { Heart, PlusCircle, MousePointer2, Share2, Flag, Bookmark } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useLang } from '../context/LangContext'
@@ -66,24 +65,14 @@ export default function FloatingPanel({
   onShare,
   onReport,
   onUnreport,
-  siteId,
+  reported   = false,
   canReport,
 }) {
   const { t } = useLang()
-  const [reported, setReported] = useState(false)
-
-  useEffect(() => {
-    setReported(false)
-  }, [siteId])
 
   const handleReport = () => {
-    if (reported) {
-      setReported(false)
-      onUnreport?.()
-    } else {
-      setReported(true)
-      onReport?.()
-    }
+    if (reported) onUnreport?.()
+    else onReport?.()
   }
 
   return (
