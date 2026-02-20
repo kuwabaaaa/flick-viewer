@@ -22,7 +22,7 @@ import { motion, AnimatePresence } from 'framer-motion'
  */
 
 function Divider() {
-  return <div className="w-8 h-px bg-white/10 mx-auto flex-shrink-0" />
+  return <div className="w-8 h-px bg-white/[0.15] mx-auto flex-shrink-0" />
 }
 
 function ActionButton({
@@ -37,7 +37,7 @@ function ActionButton({
   return (
     <motion.div
       className="flex flex-col items-center gap-1 px-3 py-2.5 rounded-2xl
-        cursor-pointer hover:bg-white/10 transition-colors duration-150 relative"
+        cursor-pointer hover:bg-white/15 transition-colors duration-150 relative"
       whileTap={{ scale: 0.88 }}
       onClick={onClick}
     >
@@ -105,10 +105,10 @@ export default function FloatingPanel({
     <div className="absolute right-3 bottom-20 z-30">
       <div className="
         flex flex-col items-stretch py-1.5
-        bg-white/[0.08] backdrop-blur-2xl
-        border border-white/[0.12]
+        bg-gray-900/80 backdrop-blur-2xl
+        border border-white/[0.18]
         rounded-[28px]
-        shadow-2xl shadow-black/60
+        shadow-2xl shadow-black/80
       ">
 
         {/* ❤️ いいね（認証必要） */}
