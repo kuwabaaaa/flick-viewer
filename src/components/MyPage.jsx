@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import {
-  X, User, Wallet, LayoutGrid, Bookmark,
+  X, User, Wallet, LayoutGrid, Bookmark, Heart,
   Pencil, Trash2, Save, Eye, SkipForward, ExternalLink, LogOut, Settings,
 } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -13,12 +13,13 @@ import { CATEGORIES } from '../data/sites'
 
 // ── セクションヘッダー ────────────────────────────────────────
 function SectionHeader({ icon: Icon, label, count }) {
+  const { t } = useLang()
   return (
     <div className="flex items-center gap-2 mb-3 px-1">
       <Icon size={15} className="text-white/50" />
       <span className="text-white/70 text-sm font-semibold">{label}</span>
       {count != null && (
-        <span className="text-white/30 text-xs ml-auto">{count}件</span>
+        <span className="text-white/30 text-xs ml-auto">{count}{t('count')}</span>
       )}
     </div>
   )
@@ -33,7 +34,7 @@ function WalletRow({ label, coin, value, onChange }) {
         type="text"
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        placeholder={`${label} アドレス`}
+        placeholder={`${label}`}
         className="flex-1 glass text-white/80 rounded-xl px-3 py-2.5 text-xs font-mono
           placeholder-white/20 outline-none focus:border-white/30 transition-all"
       />
@@ -43,6 +44,7 @@ function WalletRow({ label, coin, value, onChange }) {
 
 // ── 投稿サイトカード（編集・削除・アナリティクス） ─────────────
 function AuthorSiteCard({ site, onUpdated, onDeleted }) {
+  const { t } = useLang()
   const [editing, setEditing]   = useState(false)
   const [title,   setTitle]     = useState(site.title)
   const [saving,  setSaving]    = useState(false)
@@ -123,7 +125,7 @@ function AuthorSiteCard({ site, onUpdated, onDeleted }) {
       )}
 
       {confirm && (
-        <p className="text-rose-400 text-xs mb-2">もう一度タップで削除します</p>
+        <p className="text-rose-400 text-xs mb-2">{t('tapToDelete')}</p>
       )}
 
       {/* アナリティクスバー */}
@@ -135,7 +137,7 @@ function AuthorSiteCard({ site, onUpdated, onDeleted }) {
           <Heart size={11} className="text-rose-400/60" /> {likes}
         </span>
         <span className="flex items-center gap-1">
-          <SkipForward size={11} className="text-white/30" /> スキップ {skipRate}%
+          <SkipForward size={11} className="text-white/30" /> {t('skipPct')} {skipRate}%
         </span>
         {/* スキップ率バー */}
         <div className="flex-1 h-1 bg-white/10 rounded-full overflow-hidden ml-auto">
@@ -234,7 +236,7 @@ export default function MyPage({ onClose }) {
         <div className="flex items-center justify-between px-5 pt-5 pb-3 flex-shrink-0
           border-b border-white/5">
           <div>
-            <h2 className="text-white font-bold text-lg">マイページ</h2>
+            <h2 className="text-white font-bold text-lg">{t('myPage')}</h2>
             <p className="text-white/30 text-xs mt-0.5 truncate max-w-[220px]">
               {user?.email}
             </p>
@@ -243,7 +245,7 @@ export default function MyPage({ onClose }) {
             <button onClick={handleSignOut}
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl glass
                 text-white/40 hover:text-white/70 text-xs transition-colors">
-              <LogOut size={12} /> ログアウト
+              <LogOut size={12} /> {t('logout')}
             </button>
             <button onClick={onClose}
               className="w-8 h-8 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 transition-colors">
@@ -278,11 +280,11 @@ export default function MyPage({ onClose }) {
               >
                 {/* ユーザー名 */}
                 <div>
-                  <SectionHeader icon={User} label="ユーザー名" />
+                  <SectionHeader icon={User} label={t('username')} />
                   <input
                     value={username}
                     onChange={(e) => setUsername(e.target.value)}
-                    placeholder="表示名（未設定）"
+                    placeholder={t('displayNamePlaceholder')}
                     maxLength={30}
                     className="w-full glass text-white rounded-2xl px-4 py-3 text-sm
                       placeholder-white/20 outline-none focus:border-white/30 transition-all"
@@ -291,14 +293,14 @@ export default function MyPage({ onClose }) {
 
                 {/* ウォレット設定 */}
                 <div>
-                  <SectionHeader icon={Wallet} label="ウォレットアドレス" />
+                  <SectionHeader icon={Wallet} label={t('walletAddress')} />
                   <div className="space-y-2.5">
                     <WalletRow label="Bitcoin"  coin="BTC" value={btc} onChange={setBtc} />
                     <WalletRow label="Ethereum" coin="ETH" value={eth} onChange={setEth} />
                     <WalletRow label="Solana"   coin="SOL" value={sol} onChange={setSol} />
                   </div>
                   <p className="text-white/20 text-xs mt-2 px-1">
-                    ※ 自分の投稿サイトへの投げ銭受取に使用されます
+                    ※ {t('walletNote')}
                   </p>
                 </div>
 
@@ -310,7 +312,7 @@ export default function MyPage({ onClose }) {
                       ? 'bg-emerald-500/20 border border-emerald-500/40 text-emerald-400'
                       : 'bg-white text-black hover:bg-white/90'}`}
                 >
-                  {saving ? '保存中...' : saved ? '✓ 保存しました' : 'プロフィールを保存'}
+                  {saving ? t('saving') : saved ? t('saveDone') : t('saveProfile')}
                 </motion.button>
               </motion.div>
             )}
@@ -322,13 +324,13 @@ export default function MyPage({ onClose }) {
                 exit={{ opacity: 0, x: 10 }} transition={{ duration: 0.2 }}
                 className="p-5"
               >
-                <SectionHeader icon={LayoutGrid} label="投稿サイト" count={authorSites.length} />
+                <SectionHeader icon={LayoutGrid} label={t('postSites')} count={authorSites.length} />
                 {loadingData ? (
-                  <p className="text-white/25 text-sm text-center py-8">読み込み中...</p>
+                  <p className="text-white/25 text-sm text-center py-8">{t('loading')}</p>
                 ) : authorSites.length === 0 ? (
                   <div className="text-center py-12">
-                    <p className="text-white/25 text-sm">まだ投稿がありません</p>
-                    <p className="text-white/15 text-xs mt-1">右パネルの「＋」から投稿できます</p>
+                    <p className="text-white/25 text-sm">{t('noPostsYet')}</p>
+                    <p className="text-white/15 text-xs mt-1">{t('noPostsHint')}</p>
                   </div>
                 ) : (
                   <div className="space-y-3">
@@ -356,13 +358,13 @@ export default function MyPage({ onClose }) {
                 exit={{ opacity: 0, x: 10 }} transition={{ duration: 0.2 }}
                 className="p-5"
               >
-                <SectionHeader icon={Bookmark} label="お気に入り" count={favoriteSites.length} />
+                <SectionHeader icon={Bookmark} label={t('favorites')} count={favoriteSites.length} />
                 {loadingData ? (
-                  <p className="text-white/25 text-sm text-center py-8">読み込み中...</p>
+                  <p className="text-white/25 text-sm text-center py-8">{t('loading')}</p>
                 ) : favoriteSites.length === 0 ? (
                   <div className="text-center py-12">
-                    <p className="text-white/25 text-sm">保存済みサイトがありません</p>
-                    <p className="text-white/15 text-xs mt-1">右パネルの「🔖」で保存できます</p>
+                    <p className="text-white/25 text-sm">{t('noFavYet')}</p>
+                    <p className="text-white/15 text-xs mt-1">{t('noFavHint')}</p>
                   </div>
                 ) : (
                   <div className="space-y-2">
@@ -402,7 +404,7 @@ export default function MyPage({ onClose }) {
                         <span className="text-2xl">{flag}</span>
                         <span>{label}</span>
                         {lang === code && (
-                          <span className="text-[10px] text-emerald-400 font-medium">✓ 選択中</span>
+                          <span className="text-[10px] text-emerald-400 font-medium">{t('selectedMark')}</span>
                         )}
                       </motion.button>
                     ))}

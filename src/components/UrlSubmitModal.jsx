@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { X, Globe, Link2, ChevronDown, ChevronUp } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { CATEGORIES } from '../data/sites'
+import { useLang } from '../context/LangContext'
 
 const WALLET_COINS = ['BTC', 'ETH', 'SOL']
 
@@ -12,6 +13,7 @@ const WALLET_COINS = ['BTC', 'ETH', 'SOL']
  * authorWallet: { [coin]: address } | null
  */
 export default function UrlSubmitModal({ onClose, onSubmit }) {
+  const { t } = useLang()
   const [url, setUrl] = useState('https://')
   const [title, setTitle] = useState('')
   const [category, setCategory] = useState('Tools')
@@ -42,11 +44,11 @@ export default function UrlSubmitModal({ onClose, onSubmit }) {
     try {
       const parsed = new URL(value)
       if (!['http:', 'https:'].includes(parsed.protocol)) {
-        return 'https:// または http:// で始まるURLを入力してください'
+        return t('urlError1')
       }
       return ''
     } catch {
-      return '有効なURLを入力してください（例: https://example.com）'
+      return t('urlError2')
     }
   }
 
@@ -93,7 +95,7 @@ export default function UrlSubmitModal({ onClose, onSubmit }) {
             <div className="w-9 h-9 rounded-xl glass flex items-center justify-center">
               <Globe size={17} className="text-sky-400" />
             </div>
-            <h2 className="text-white font-bold text-lg">URLを投稿</h2>
+            <h2 className="text-white font-bold text-lg">{t('postUrl')}</h2>
           </div>
           <button
             onClick={onClose}
@@ -157,7 +159,7 @@ export default function UrlSubmitModal({ onClose, onSubmit }) {
                       className="text-sky-400 text-xs font-semibold
                         hover:text-sky-300 transition-colors flex-shrink-0"
                     >
-                      タイトルに使う
+                      {t('useAsTitle')}
                     </button>
                   )}
                 </div>
@@ -168,13 +170,13 @@ export default function UrlSubmitModal({ onClose, onSubmit }) {
           {/* タイトル */}
           <div>
             <label className="text-white/55 text-xs font-medium mb-1.5 block uppercase tracking-wider">
-              タイトル <span className="text-white/25 normal-case tracking-normal font-normal">（省略可）</span>
+              {t('titleLabel')} <span className="text-white/25 normal-case tracking-normal font-normal">{t('titleOpt')}</span>
             </label>
             <input
               type="text"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              placeholder="わかりやすい名前（省略時はドメイン名）"
+              placeholder={t('titlePlaceholder')}
               maxLength={60}
               className="w-full glass text-white rounded-xl px-4 py-3 text-sm
                 placeholder-white/20 outline-none
@@ -185,7 +187,7 @@ export default function UrlSubmitModal({ onClose, onSubmit }) {
           {/* カテゴリ選択 */}
           <div>
             <label className="text-white/55 text-xs font-medium mb-2 block uppercase tracking-wider">
-              カテゴリ
+              {t('categoryLabel')}
             </label>
             <div className="flex flex-wrap gap-2">
               {CATEGORIES.filter((c) => c !== 'All').map((cat) => (
@@ -245,7 +247,7 @@ export default function UrlSubmitModal({ onClose, onSubmit }) {
                       type="text"
                       value={walletAddress}
                       onChange={(e) => setWalletAddress(e.target.value)}
-                      placeholder={`${walletCoin} ウォレットアドレス`}
+                      placeholder={`${walletCoin} wallet address`}
                       className="w-full glass text-white/80 rounded-xl px-4 py-2.5 text-xs font-mono
                         placeholder-white/20 outline-none
                         focus:border-amber-500/40 focus:bg-white/10 transition-all"
@@ -259,8 +261,7 @@ export default function UrlSubmitModal({ onClose, onSubmit }) {
           {/* 注意書き */}
           <div className="glass rounded-xl px-3.5 py-2.5 border border-white/5">
             <p className="text-white/25 text-xs leading-relaxed">
-              ※ セキュリティポリシー（X-Frame-Options / CSP）により
-              一部のサイトはiframe表示できません。その場合はエラー画面から外部で開けます。
+              ※ {t('iframeNote')}
             </p>
           </div>
 
@@ -272,7 +273,7 @@ export default function UrlSubmitModal({ onClose, onSubmit }) {
               className="flex-1 py-3 rounded-2xl border border-white/10 text-white/55
                 hover:bg-white/5 transition-colors text-sm font-medium"
             >
-              キャンセル
+              {t('cancel')}
             </button>
             <button
               type="submit"
@@ -280,7 +281,7 @@ export default function UrlSubmitModal({ onClose, onSubmit }) {
                 active:scale-95 text-white transition-all text-sm font-bold
                 shadow-lg shadow-sky-900/40"
             >
-              投稿する
+              {t('submitBtn')}
             </button>
           </div>
         </form>

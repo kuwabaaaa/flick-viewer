@@ -1,16 +1,13 @@
 import { useState } from 'react'
 import { X, Flag } from 'lucide-react'
 import { motion } from 'framer-motion'
+import { useLang } from '../context/LangContext'
 
-const REASONS = [
-  { id: 'broken',         label: 'リンク切れ・表示されない' },
-  { id: 'inappropriate',  label: '不適切なコンテンツ' },
-  { id: 'spam',           label: 'スパム・詐欺' },
-  { id: 'copyright',      label: '著作権違反' },
-  { id: 'other',          label: 'その他' },
-]
+const REASON_KEYS = ['reasonBroken', 'reasonInappropriate', 'reasonSpam', 'reasonCopyright', 'reasonOther']
+const REASON_IDS  = ['broken', 'inappropriate', 'spam', 'copyright', 'other']
 
 export default function ReportModal({ onSubmit, onClose }) {
+  const { t } = useLang()
   const [selected, setSelected] = useState(null)
 
   return (
@@ -29,7 +26,7 @@ export default function ReportModal({ onSubmit, onClose }) {
         <div className="flex items-center justify-between mb-5">
           <div className="flex items-center gap-2">
             <Flag size={15} className="text-rose-400" />
-            <h2 className="text-white font-bold">報告する理由を選択</h2>
+            <h2 className="text-white font-bold">{t('reportTitle')}</h2>
           </div>
           <button onClick={onClose}
             className="w-8 h-8 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 transition-colors">
@@ -39,16 +36,16 @@ export default function ReportModal({ onSubmit, onClose }) {
 
         {/* 理由リスト */}
         <div className="space-y-2 mb-5">
-          {REASONS.map((r) => (
+          {REASON_IDS.map((id, i) => (
             <button
-              key={r.id}
-              onClick={() => setSelected(r.id)}
+              key={id}
+              onClick={() => setSelected(id)}
               className={`w-full text-left px-4 py-3.5 rounded-2xl text-sm font-medium transition-all
-                ${selected === r.id
+                ${selected === id
                   ? 'bg-rose-500/20 border border-rose-500/40 text-rose-300'
                   : 'glass text-white/60 hover:text-white/80 border border-white/8'}`}
             >
-              {r.label}
+              {t(REASON_KEYS[i])}
             </button>
           ))}
         </div>
@@ -61,7 +58,7 @@ export default function ReportModal({ onSubmit, onClose }) {
           className="w-full py-3.5 rounded-2xl bg-rose-500 text-white font-bold text-sm
             hover:bg-rose-400 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
         >
-          報告する
+          {t('reportSubmit')}
         </motion.button>
       </motion.div>
     </div>

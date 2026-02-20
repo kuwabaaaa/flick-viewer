@@ -10,6 +10,7 @@ import { getSites, saveSite, getHiddenSiteIds, hideSite, reportSite, unreportSit
 import { recordView, toggleLike, toggleFavorite, getUserLikedIds, getUserFavoriteIds, saveSiteToSupabase, reportSiteSupabase } from './services/supabaseDb'
 import { getCategoryPrefs, recordCategoryWatch, buildScoredFeed, startWatch, endWatch } from './hooks/useFeed'
 import { useAuth } from './context/AuthContext'
+import { useLang } from './context/LangContext'
 import { isSupabaseConfigured } from './lib/supabase'
 
 import SiteCard         from './components/SiteCard'
@@ -89,6 +90,7 @@ function PeekCard({ item }) {
 // ─────────────────────────────────────────────────────────────
 export default function App() {
   const { user, profile } = useAuth()
+  const { t } = useLang()
 
   // ── 1. localStorage + Supabase サイト取得 ──────────────────
   const [userSites,  setUserSites]  = useState([])
@@ -282,7 +284,7 @@ export default function App() {
       setFavoriteIds((prev) =>
         nowFav ? [...prev, currentItem.id] : prev.filter((id) => id !== currentItem.id)
       )
-      showToast(nowFav ? 'お気に入りに追加しました' : 'お気に入りを解除しました')
+      showToast(nowFav ? t('favAdded') : t('favRemoved'))
     })
   }, [requireAuth, currentItem, user, showToast])
 
@@ -304,10 +306,10 @@ export default function App() {
     setReportedIds((prev) => new Set([...prev, currentItem.id]))
     if (autoHiddenLocal || autoDeletedRemote) {
       setHiddenIds((prev) => [...prev, currentItem.id])
-      showToast('サイトを非表示にしました')
+      showToast(t('siteHidden'))
       goNext()
     } else {
-      showToast('報告しました。ありがとうございます')
+      showToast(t('reportedMsg'))
     }
   }, [currentItem, showToast, goNext])
 
@@ -331,7 +333,7 @@ export default function App() {
       next.delete(currentItem.id)
       return next
     })
-    showToast('報告を取り消しました')
+    showToast(t('unreportedMsg'))
   }, [currentItem, showToast])
 
   // ── 12. HelpModal ────────────────────────────────────────────
@@ -360,9 +362,9 @@ export default function App() {
         newSite = await saveSite({ url, title, category, description: '', authorWallet })
       }
       setUserSites((prev) => [newSite, ...prev])
-      showToast('サイトを投稿しました！')
+      showToast(t('postedMsg'))
     } catch (e) {
-      showToast(e.message ?? '投稿に失敗しました', 'error')
+      showToast(e.message ?? t('postError'), 'error')
     }
     setShowModal(false)
   }, [user, profile, showToast])
@@ -381,9 +383,9 @@ export default function App() {
         document.execCommand('copy')
         document.body.removeChild(ta)
       }
-      showToast('URLをコピーしました！')
+      showToast(t('copiedMsg'))
     } catch {
-      showToast('コピーに失敗しました', 'error')
+      showToast(t('copyError'), 'error')
     }
   }, [currentItem, showToast])
 
@@ -515,9 +517,11 @@ export default function App() {
       {/* フィードが空のとき */}
       {feed.length === 0 && (
         <div className="absolute inset-0 z-30 flex flex-col items-center justify-center gap-3">
-          <p className="text-white/40 text-base font-medium">「{activeCategory}」のサイトはまだありません</p>
+          <p className="text-white/40 text-base font-medium">
+            {t('emptyFeed').replace('%s', activeCategory)}
+          </p>
           <button onClick={() => setActiveCategory('All')}
-            className="text-sky-400 text-sm underline underline-offset-2">すべて表示</button>
+            className="text-sky-400 text-sm underline underline-offset-2">{t('showAll')}</button>
         </div>
       )}
 
@@ -531,7 +535,7 @@ export default function App() {
           >
             <div className="glass rounded-full px-4 py-2 border-white/8
               text-white/40 text-xs text-center whitespace-nowrap">
-              ↑↓ スワイプ &nbsp;/&nbsp; ダブルタップで操作モード
+              {t('swipeHint')}
             </div>
           </motion.div>
         )}
