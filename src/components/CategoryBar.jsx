@@ -25,7 +25,7 @@ export default function CategoryBar({ categories, active, onChange }) {
 
       <div
         ref={scrollRef}
-        className="relative flex gap-2 px-4 pb-2 overflow-x-auto no-scrollbar"
+        className="relative flex gap-2 pl-4 pr-14 pb-2 overflow-x-auto no-scrollbar"
       >
         {categories.map((cat) => {
           const isActive = active === cat

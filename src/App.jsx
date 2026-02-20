@@ -424,31 +424,34 @@ const [showHelp,        setShowHelp]        = useState(false)
 
       {/* ══ Layer 3: UI 要素 ════════════════════════════════════ */}
 
-      {/* ユーザーボタン（左上） */}
+      {/* ユーザーボタン（左下 / TikTok スタイル） */}
       <button
         onClick={() => user ? setShowMyPage(true) : setShowAuthModal(true)}
-        className="absolute left-3 top-3 z-40 w-8 h-8
+        className="absolute left-4 bottom-8 z-50 w-10 h-10
           flex items-center justify-center rounded-full
-          glass border border-white/10
-          text-white/50 hover:text-white/80 transition-colors"
+          bg-gray-900/85 backdrop-blur-md
+          border border-white/20 shadow-lg shadow-black/50
+          text-white/75 hover:text-white active:scale-95 transition-all"
         aria-label={user ? 'マイページ' : 'ログイン'}
       >
         {user && profile?.username ? (
-          <span className="text-[11px] font-bold text-white/70">
+          <span className="text-sm font-bold text-white">
             {profile.username.slice(0, 1).toUpperCase()}
           </span>
         ) : (
-          <User size={14} />
+          <User size={16} />
         )}
       </button>
 
-      {/* ヘルプボタン（右上） */}
+      {/* ヘルプボタン（右上 / z-50 で CategoryBar より前面） */}
       <button
         onClick={() => setShowHelp(true)}
-        className="absolute right-3 top-3 z-40 w-8 h-8
+        className="absolute right-3 top-3 z-50 w-9 h-9
           flex items-center justify-center rounded-full
-          glass border border-white/10
-          text-white/50 hover:text-white/80 text-sm font-bold transition-colors"
+          bg-gray-900/85 backdrop-blur-md
+          border border-white/20 shadow-lg shadow-black/50
+          text-white/75 hover:text-white text-sm font-bold
+          active:scale-95 transition-all"
         aria-label="使い方"
       >
         ?
